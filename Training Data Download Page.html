@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Download Files</title>
+
+<!-- Libraries that do the zipping and saving, loaded from CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+<style>
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    max-width: 420px;
+    width: 100%;
+    border-radius: 16px;
+    padding: 32px 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  h1 { font-size: 20px; margin-bottom: 8px; }
+  p.sub { color: #666; font-size: 14px; margin-bottom: 24px; }
+  .file-list {
+    text-align: left;
+    margin-bottom: 24px;
+    border: 1px solid #eee;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .file-list a {
+    display: block;
+    padding: 12px 16px;
+    color: #222;
+    text-decoration: none;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+  }
+  .file-list a:last-child { border-bottom: none; }
+  .file-list a:hover { background: #fafafa; }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+  }
+  button:disabled { background: #93b4f0; cursor: not-allowed; }
+  #status { margin-top: 14px; font-size: 13px; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Your Files</h1>
+  <p class="sub">Tap the button below to download everything as one file.</p>
+
+  <!-- Optional: individual links as a fallback / alternative -->
+  <div class="file-list" id="fileList"></div>
+
+  <button id="downloadBtn">Download All Files</button>
+  <div id="status"></div>
+</div>
+
+<script>
+  // ============================================================
+  // EDIT THIS LIST: put the filenames of the files you're hosting
+  // alongside this HTML file (same folder).
+  // ============================================================
+  const files = [
+    "file1.pdf",
+    "file2.pdf",
+    "image1.jpg"
+  ];
+  // ============================================================
+
+  const fileListEl = document.getElementById('fileList');
+  const btn = document.getElementById('downloadBtn');
+  const status = document.getElementById('status');
+
+  // Render individual links too (fallback option)
+  files.forEach(name => {
+    const a = document.createElement('a');
+    a.href = name;
+    a.download = name;
+    a.textContent = name;
+    fileListEl.appendChild(a);
+  });
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    status.textContent = 'Preparing your files...';
+
+    try {
+      const zip = new JSZip();
+
+      // Fetch each file and add it to the zip
+      for (const name of files) {
+        status.textContent = `Adding ${name}...`;
+        const response = await fetch(name);
+        if (!response.ok) throw new Error(`Could not load ${name}`);
+        const blob = await response.blob();
+        zip.file(name, blob);
+      }
+
+      status.textContent = 'Zipping...';
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+      status.textContent = 'Starting download...';
+      saveAs(zipBlob, 'files.zip');
+
+      status.textContent = 'Done! Check your downloads folder.';
+    } catch (err) {
+      console.error(err);
+      status.textContent = 'Something went wrong. Try the individual links above instead.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
